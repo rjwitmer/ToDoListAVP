@@ -10,31 +10,34 @@ import RealityKit
 import RealityKitContent
 
 struct ToDoListView: View {
+    var toDoItems: [String] = [
+        "Learn Swift",
+        "Build Apps",
+        "Change the World",
+        "Bring the Awesomme",
+        "Take a Vacation",
+        "Take a Nap"
+    ]
     var body: some View {
+
         NavigationStack {
-            VStack {
-                
-                Text("To Do")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                
-                Spacer()
-                
-                NavigationLink {
-                    DetailView()
-                } label: {
-                    Image(systemName: "eye")
-                    Text("Show the Detail View!")
+            
+            List {
+                ForEach(toDoItems, id: \.self) { toDoItem in
+                    NavigationLink {
+                        DetailView(passedValue: toDoItem)
+                    } label: {
+                        Text(toDoItem)
+                    }
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.blue)
-
-                Spacer()
-
             }
+            .navigationTitle("To Do List")
+            .navigationBarTitleDisplayMode(.automatic)
+            .listStyle(.automatic)
             .padding()
+            
         }
-
+        .padding()
     }
 }
 
