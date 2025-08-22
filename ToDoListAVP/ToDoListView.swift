@@ -8,27 +8,23 @@
 import SwiftUI
 import RealityKit
 import RealityKitContent
+import SwiftData
 
 struct ToDoListView: View {
     @State private var sheetIsPresented: Bool = false
-    var toDoItems: [String] = [
-        "Learn Swift",
-        "Build Apps",
-        "Change the World",
-        "Bring the Awesomme",
-        "Take a Vacation",
-        "Take a Nap"
-    ]
+    @Environment(\.modelContext) var modelContext
+    @Query var toDoItems: [ToDo]
+
     var body: some View {
 
         NavigationStack {
             
             List {
-                ForEach(toDoItems, id: \.self) { toDoItem in
+                ForEach(toDoItems) { toDo in
                     NavigationLink {
-                        DetailView(toDoItem: toDoItem)
+                        DetailView(toDo: ToDo(item: toDo.item, reminderIsOn: toDo.reminderIsOn, dueDate: toDo.dueDate, notes: toDo.notes, isCompleted: toDo.isCompleted))
                     } label: {
-                        Text(toDoItem)
+                        Text(toDo.item)
                     }
                     .font(.title2)
                 }
@@ -36,9 +32,9 @@ struct ToDoListView: View {
             .navigationTitle("To Do List")
             .navigationBarTitleDisplayMode(.automatic)
             .listStyle(.automatic)
-            .sheet(isPresented: $sheetIsPresented) {
+            .sheet(isPresented: $sheetIsPresented) {        // Could also use .fullScreenCover instead of .sheet
                 NavigationStack {
-                    DetailView(toDoItem: "")
+                    DetailView(toDo: ToDo(item: "", reminderIsOn: false, dueDate: Date.now, notes: "", isCompleted: false))
                 }
             }
             .toolbar {
@@ -60,4 +56,5 @@ struct ToDoListView: View {
 
 #Preview(windowStyle: .automatic) {
     ToDoListView()
+        .modelContainer(for: ToDo.self, inMemory: true)
 }
