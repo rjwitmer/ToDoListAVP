@@ -21,12 +21,36 @@ struct ToDoListView: View {
             
             List {
                 ForEach(toDoItems) { toDo in
-                    NavigationLink {
-                        DetailView(toDo: ToDo(item: toDo.item, reminderIsOn: toDo.reminderIsOn, dueDate: toDo.dueDate, notes: toDo.notes, isCompleted: toDo.isCompleted))
-                    } label: {
-                        Text(toDo.item)
+                    HStack {
+                        Image(systemName: toDo.isCompleted ? "checkmark.circle.fill" : "circle")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 60, height: 60)
+                            .padding(.trailing)
+                            .onTapGesture {
+                                toDo.isCompleted.toggle()
+                                guard let _ = try? modelContext.save() else {
+                                    print("😡 ERROR: Failed to save toggle change.")
+                                    return
+                                }
+                            }
+                        NavigationLink {
+                            DetailView(toDo: toDo.self)
+                        } label: {
+                            Text(toDo.item)
+                        }
+                        .font(.title2)
+                        .swipeActions {
+                            Button("Delete", role: .destructive) {
+                                modelContext.delete(toDo)
+                                guard let _ = try? modelContext.save() else {
+                                    print("😡 ERROR: Failed to save deletion change.")
+                                    return
+                                }
+                            }
+                        }
                     }
-                    .font(.title2)
+                    .font(.title)
                 }
             }
             .navigationTitle("To Do List")
@@ -43,6 +67,9 @@ struct ToDoListView: View {
                         sheetIsPresented.toggle()
                     } label: {
                         Image(systemName: "plus")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 60, height: 60)
                     }
 
                 }

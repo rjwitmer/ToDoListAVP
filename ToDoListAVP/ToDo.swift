@@ -16,7 +16,7 @@ class ToDo {
     var notes: String = ""
     var isCompleted: Bool = false
     
-    init(item: String, reminderIsOn: Bool, dueDate: Date, notes: String, isCompleted: Bool) {
+    init(item: String = "", reminderIsOn: Bool = false, dueDate: Date = Date.now + (60*60*24), notes: String = "", isCompleted: Bool = false) {
         self.item = item
         self.reminderIsOn = reminderIsOn
         self.dueDate = dueDate
