@@ -10,75 +10,116 @@ import RealityKit
 import RealityKitContent
 import SwiftData
 
-struct ToDoListView: View {
-    @State private var sheetIsPresented: Bool = false
+enum SortOption: String, CaseIterable {
+    case unsorted = "Unsorted"
+    case alphabetical = "A-Z"
+    case chronological = "Date"
+    case completed = "Not Done"
+}
+
+struct SortedToDoList: View {
+    
     @Environment(\.modelContext) var modelContext
     @Query var toDoItems: [ToDo]
-
+    let sortSelection: SortOption
+    
+    init(sortSection: SortOption) {
+        self.sortSelection = sortSection
+        switch self.sortSelection {
+        case .unsorted:
+            _toDoItems = Query()
+        case .alphabetical:
+            _toDoItems = Query(sort: \.item, animation: .default)
+        case .chronological:
+            _toDoItems = Query(sort: \.dueDate)
+        case .completed:
+            _toDoItems = Query(filter: #Predicate {$0.isCompleted == false})
+        }
+    }
+    
     var body: some View {
-
-        NavigationStack {
-            
-            List {
-                ForEach(toDoItems) { toDo in
-                    VStack (alignment: .leading) {
-                        HStack {
-                            Image(systemName: toDo.isCompleted ? "checkmark.rectangle" : "rectangle")
-                                .padding(.trailing)
-                                .onTapGesture {
-                                    toDo.isCompleted.toggle()
-                                    guard let _ = try? modelContext.save() else {
-                                        print("😡 ERROR: Failed to save toggle change.")
-                                        return
-                                    }
-                                }
-                            NavigationLink {
-                                DetailView(toDo: toDo.self)
-                            } label: {
-                                Text(toDo.item)
-                            }
-                            .font(.title2)
-                            .swipeActions {
-                                Button("Delete", role: .destructive) {
-                                    modelContext.delete(toDo)
-                                    guard let _ = try? modelContext.save() else {
-                                        print("😡 ERROR: Failed to save deletion change.")
-                                        return
-                                    }
+        List {
+            ForEach(toDoItems) { toDo in
+                VStack (alignment: .leading) {
+                    HStack {
+                        Image(systemName: toDo.isCompleted ? "checkmark.rectangle" : "rectangle")
+                            .padding(.trailing)
+                            .onTapGesture {
+                                toDo.isCompleted.toggle()
+                                guard let _ = try? modelContext.save() else {
+                                    print("😡 ERROR: Failed to save toggle change.")
+                                    return
                                 }
                             }
+                        NavigationLink {
+                            DetailView(toDo: toDo.self)
+                        } label: {
+                            Text(toDo.item)
                         }
                         .font(.title2)
-                    }
-                    HStack {
-                        Text(toDo.dueDate.formatted(date: .abbreviated, time: .shortened))
-                            .foregroundStyle(.secondary)
-                        if toDo.reminderIsOn {
-                            Image(systemName: "calendar.badge.clock")
-                                .symbolRenderingMode(.multicolor)
+                        .swipeActions {
+                            Button("Delete", role: .destructive) {
+                                modelContext.delete(toDo)
+                                guard let _ = try? modelContext.save() else {
+                                    print("😡 ERROR: Failed to save deletion change.")
+                                    return
+                                }
+                            }
                         }
                     }
+                    .font(.title2)
                 }
-            }
-            .navigationTitle("To Do List")
-            .navigationBarTitleDisplayMode(.automatic)
-            .listStyle(.plain)
-            .sheet(isPresented: $sheetIsPresented) {        // Could also use .fullScreenCover instead of .sheet
-                NavigationStack {
-                    DetailView(toDo: ToDo(item: "", reminderIsOn: false, dueDate: Date.now, notes: "", isCompleted: false))
-                }
-            }
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        sheetIsPresented.toggle()
-                    } label: {
-                        Image(systemName: "plus")
+                HStack {
+                    Text(toDo.dueDate.formatted(date: .abbreviated, time: .shortened))
+                        .foregroundStyle(.secondary)
+                    if toDo.reminderIsOn {
+                        Image(systemName: "calendar.badge.clock")
+                            .symbolRenderingMode(.multicolor)
                     }
-
                 }
             }
-            .padding()
+        }
+        .listStyle(.plain)
+        
+    }
+}
+
+struct ToDoListView: View {
+    @State private var sheetIsPresented: Bool = false
+    @State private var sortSelection: SortOption = .unsorted
+    
+    
+    var body: some View {
+        
+        NavigationStack {
+            SortedToDoList(sortSection: sortSelection)
+            
+                .navigationTitle("To Do List")
+                .navigationBarTitleDisplayMode(.automatic)
+                .sheet(isPresented: $sheetIsPresented) {        // Could also use .fullScreenCover instead of .sheet
+                    NavigationStack {
+                        DetailView(toDo: ToDo(item: "", reminderIsOn: false, dueDate: Date.now, notes: "", isCompleted: false))
+                    }
+                }
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            sheetIsPresented.toggle()
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                        
+                    }
+                    ToolbarItem(placement: .bottomBar) {
+                        Picker("Sort By:", selection: $sortSelection) {
+                            ForEach(SortOption.allCases, id: \.self) { option in
+                                Text(option.rawValue)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                }
+                .padding()
             
         }
         .padding()
@@ -87,5 +128,5 @@ struct ToDoListView: View {
 
 #Preview(windowStyle: .automatic) {
     ToDoListView()
-        .modelContainer(ToDo.preview)
+        .modelContainer(ToDo.preview)   // Use mock data in preview
 }
